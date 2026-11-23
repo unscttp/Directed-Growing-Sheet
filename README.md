@@ -1087,3 +1087,7 @@ in `pyproject.toml`:
 ```bash
 ruff format . && ruff check .
 ```
+
+## License
+
+Directed Growing Sheet is licensed under the [Apache License 2.0](LICENSE).

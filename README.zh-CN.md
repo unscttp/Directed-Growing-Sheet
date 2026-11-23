@@ -890,3 +890,7 @@ skill 可以保留运行时用过的图，下次运行时就可以从一个已�
 ```bash
 ruff format . && ruff check .
 ```
+
+## 许可证
+
+Directed Growing Sheet 采用 [Apache License 2.0](LICENSE) 许可证。

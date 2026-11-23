@@ -1,0 +1,38 @@
+{
+  "format_version": 1,
+  "description": "The ready-made assistant of the recommended setup (Assistant, python quickstart.py): one LLM node on the built-in toolbox. Edit to change its instructions, limits or permissions; Assistant(..., preset=path) loads another file.",
+  "workflow": {
+    "id": "assistant",
+    "name": "Assistant",
+    "start": [
+      "assistant"
+    ],
+    "edges": [],
+    "nodes": [
+      {
+        "id": "assistant",
+        "type": "assistant",
+        "name": "Assistant",
+        "inputs": {
+          "message": "/message"
+        },
+        "outputs": {
+          "answer": "/answer"
+        },
+        "allowance": "safe-default",
+        "react": {
+          "max_steps": 20,
+          "on_step_limit": "answer"
+        },
+        "config": {
+          "instruction": "You are a helpful assistant. Answer the user's request. You can look at files in the workspace folder with the fs tools and work with text, JSON and CSV with the other tools. Paths are relative to the workspace. Answer in the user's language."
+        }
+      }
+    ]
+  },
+  "node": "assistant",
+  "allowance": "safe-default",
+  "allowance_with_writes": "workspace-editor",
+  "model_retry_attempts": 2,
+  "workspace": "workspace"
+}

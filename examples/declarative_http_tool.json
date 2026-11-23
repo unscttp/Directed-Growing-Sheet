@@ -1,0 +1,35 @@
+{
+  "name": "decl.search_api",
+  "description": "Query an approved JSON API and parse its response.",
+  "parameters": {
+    "query": "string"
+  },
+  "steps": [
+    {
+      "id": "fetch",
+      "tool": "http.request",
+      "arguments": {
+        "url": "https://api.example.com/search",
+        "method": "GET",
+        "query": {
+          "q": {
+            "$input": "query"
+          }
+        },
+        "headers": {
+          "Accept": "application/json"
+        }
+      }
+    },
+    {
+      "id": "parse",
+      "tool": "json.parse",
+      "arguments": {
+        "text": {
+          "$step": "fetch",
+          "path": "/body"
+        }
+      }
+    }
+  ]
+}

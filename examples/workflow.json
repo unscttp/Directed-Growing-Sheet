@@ -1,0 +1,16 @@
+{
+  "id": "react_example",
+  "name": "ReAct with a reusable allowance",
+  "start": ["lookup"],
+  "nodes": [
+    {
+      "id": "lookup",
+      "type": "agent.lookup",
+      "inputs": {"query": "/query"},
+      "outputs": {"answer": "/answer"},
+      "react": {"max_steps": 4},
+      "allowance": "read_only"
+    }
+  ],
+  "edges": []
+}

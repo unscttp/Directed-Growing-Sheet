@@ -1,0 +1,1083 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/workflow",
+  "$defs": {
+    "directed_graph": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edge"
+          }
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "nodes",
+        "edges"
+      ],
+      "additionalProperties": false
+    },
+    "graph_request": {
+      "type": "object",
+      "properties": {
+        "usage_scenario": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "$ref": "#/$defs/edge"
+          }
+        },
+        "start": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "skill_invoke_id": {
+          "type": "string"
+        },
+        "save_to_skill": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "nodes",
+        "edges",
+        "start",
+        "explanation"
+      ],
+      "additionalProperties": false
+    },
+    "declarative_tool": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^decl\\.[a-z][a-z0-9_]{0,63}$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parameters": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "enum": [
+              "string",
+              "object",
+              "array",
+              "boolean",
+              "integer"
+            ]
+          }
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "tool": {
+                "type": "string",
+                "minLength": 1
+              },
+              "arguments": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "id",
+              "tool",
+              "arguments"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "parameters",
+        "steps"
+      ],
+      "additionalProperties": false
+    },
+    "condition": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "type": "array",
+              "items": {},
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "eq"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ne": {
+              "type": "array",
+              "items": {},
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "ne"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "gt": {
+              "type": "array",
+              "items": {},
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "gt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "gte": {
+              "type": "array",
+              "items": {},
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "gte"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "lt": {
+              "type": "array",
+              "items": {},
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "lt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "lte": {
+              "type": "array",
+              "items": {},
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "lte"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "and": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          },
+          "required": [
+            "and"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "or": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          },
+          "required": [
+            "or"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/condition"
+            }
+          },
+          "required": [
+            "not"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "exists": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "exists"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "node": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "outputs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "config": {
+          "type": "object"
+        },
+        "ui": {
+          "type": "object"
+        },
+        "join": {
+          "enum": [
+            "any",
+            "all"
+          ]
+        },
+        "react": {
+          "type": "object",
+          "properties": {
+            "max_steps": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "on_action_error": {
+              "enum": [
+                "observe",
+                "fail"
+              ]
+            },
+            "on_step_limit": {
+              "enum": [
+                "fail",
+                "answer"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "allowance": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "pre_run": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "post_run": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "pre_run_config": {
+          "type": "object"
+        },
+        "post_run_config": {
+          "type": "object"
+        },
+        "post_run_human_check": {
+          "type": "boolean"
+        },
+        "start_condition": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/start_condition"
+            }
+          ]
+        },
+        "routing": {
+          "$ref": "#/$defs/routing"
+        },
+        "requires": {
+          "type": "object",
+          "properties": {
+            "mcp_servers": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "allow_create_graph": {
+          "type": "boolean"
+        },
+        "memory_checkpoints": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "timeout_seconds": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ]
+        },
+        "timeout_human_check": {
+          "type": "boolean"
+        },
+        "$schema": {
+          "type": "string"
+        },
+        "knowledge": {
+          "type": "object",
+          "properties": {
+            "read": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9]([a-z0-9_.-]{0,62}[a-z0-9])?$"
+              }
+            },
+            "propose": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9]([a-z0-9_.-]{0,62}[a-z0-9])?$"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "edge": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string",
+          "minLength": 1
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1
+        },
+        "when": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/condition"
+            }
+          ]
+        },
+        "otherwise": {
+          "type": "boolean"
+        },
+        "label": {
+          "type": "string"
+        },
+        "entry_check": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "entry_check_config": {
+          "type": "object"
+        },
+        "id": {
+          "type": "string"
+        },
+        "max_traversals": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "integer",
+              "minimum": 0
+            }
+          ]
+        },
+        "$schema": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "additionalProperties": false
+    },
+    "workflow": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "format_version": {
+          "enum": [
+            "1.0"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "inputs": {
+          "type": "object"
+        },
+        "outputs": {
+          "type": "object"
+        },
+        "resources": {
+          "type": "object"
+        },
+        "requirements": {
+          "type": "object"
+        },
+        "layout": {
+          "type": "object"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edge"
+          }
+        },
+        "start": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "$schema": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "routing": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "default",
+            "llm",
+            "human"
+          ]
+        },
+        "default_edges": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "start_condition": {
+      "type": "object",
+      "properties": {
+        "required_edges": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "scope": {
+          "enum": [
+            "task",
+            "group"
+          ]
+        },
+        "group_by": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "generation_by": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "check": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "config": {
+          "type": "object"
+        },
+        "accept_skipped": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "allowance": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "description": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object"
+        },
+        "max_tool_risk": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
+              ]
+            }
+          ]
+        },
+        "$schema": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "tool": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "risk_level": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object"
+        },
+        "human_check": {
+          "type": "boolean"
+        },
+        "input_schema": {
+          "type": "object"
+        },
+        "$schema": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "risk_level"
+      ],
+      "additionalProperties": false
+    },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "input_data": {
+          "type": "object"
+        },
+        "output_data": {
+          "type": "object"
+        },
+        "local": {
+          "type": "object"
+        },
+        "continuation": {
+          "type": "object"
+        },
+        "memory_state": {
+          "type": "object"
+        },
+        "routing_state": {
+          "type": "object"
+        },
+        "timing": {
+          "type": "object"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "human_checks": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "arrival": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "joined_from": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "scheduled": {
+          "type": "boolean"
+        },
+        "skip_path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "node_id"
+      ],
+      "additionalProperties": false
+    },
+    "task": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "workflow_id": {
+          "type": "string"
+        },
+        "workflow_version": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "data": {
+          "type": "object"
+        },
+        "metadata": {
+          "type": "object"
+        },
+        "executions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/execution"
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "memory_streams": {
+          "type": "object",
+          "properties": {
+            "passive": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "current": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "archive": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "passive",
+            "current",
+            "archive"
+          ],
+          "additionalProperties": false
+        },
+        "active_memory": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "current": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "archive": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "current",
+                "archive"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "workflow_id"
+      ],
+      "additionalProperties": false
+    },
+    "model_services": {
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "format_version": {
+          "enum": [
+            1
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "default": {
+          "type": "string",
+          "minLength": 1
+        },
+        "services": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]*$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "base_url": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^https?://"
+                  }
+                ]
+              },
+              "model": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                ]
+              },
+              "needs_key": {
+                "type": "boolean"
+              },
+              "key_hint": {
+                "type": "string"
+              },
+              "api": {
+                "enum": [
+                  "chat",
+                  "responses"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "base_url",
+              "model",
+              "needs_key"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "format_version",
+        "default",
+        "services"
+      ],
+      "additionalProperties": false
+    },
+    "assistant_preset": {
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "format_version": {
+          "enum": [
+            1
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "workflow": {
+          "$ref": "#/$defs/workflow"
+        },
+        "node": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowance_with_writes": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_retry_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "workspace": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "format_version",
+        "workflow",
+        "node",
+        "allowance",
+        "allowance_with_writes",
+        "model_retry_attempts",
+        "workspace"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

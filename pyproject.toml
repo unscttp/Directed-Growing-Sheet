@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "directed-growing-sheet"
+version = "1.0.0"
+description = "Directed Growing Sheet: a JSON-first workflow engine for tool-using LLM agents, with allowances, human checks and audited memory."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+skills = ["PyYAML>=6,<7"]
+dev = ["ruff>=0.6"]
+
+[tool.setuptools]
+# Flat modules that load their bundled data (schemas/, tools/, memory_settings.json)
+# from the source folder: install with "pip install -e ." or put the folder on PYTHONPATH.
+py-modules = [
+    "workflow_allowances",
+    "workflow_approvals",
+    "workflow_basic_tools",
+    "workflow_conditions",
+    "workflow_core",
+    "workflow_declarative_checks",
+    "workflow_declarative_tools",
+    "workflow_definitions",
+    "workflow_edge_checks",
+    "workflow_engine",
+    "workflow_executions",
+    "workflow_graph_tools",
+    "workflow_graphs",
+    "workflow_hooks",
+    "workflow_http_tools",
+    "workflow_joins",
+    "workflow_knowledge",
+    "workflow_knowledge_tools",
+    "workflow_logging",
+    "workflow_memory",
+    "workflow_memory_store",
+    "workflow_model_retry",
+    "workflow_model_setup",
+    "workflow_nodes",
+    "workflow_private_tools",
+    "workflow_prompts",
+    "workflow_quickstart",
+    "workflow_react",
+    "workflow_replay",
+    "workflow_risk",
+    "workflow_routing",
+    "workflow_schema",
+    "workflow_schema_compat",
+    "workflow_settings",
+    "workflow_skill_graph_meta",
+    "workflow_skills",
+    "workflow_start_conditions",
+    "workflow_timeouts",
+    "workflow_tool_interfaces",
+    "workflow_tool_safety",
+    "workflow_tools",
+    "workflow_types",
+    "workflow_utils",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4"]
+ignore = [
+    "B904",   # raise ... from err: kept explicit where it matters
+    "SIM105", # contextlib.suppress is not clearer here
+    "SIM112", # Windows environment variable names are case-insensitive
+    "SIM108", # ternaries are not always clearer
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B023", "E731"]  # closures are invoked inside the loop iteration
+"workflow_core.py" = ["F401"]  # public re-export facade

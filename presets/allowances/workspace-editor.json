@@ -1,0 +1,25 @@
+{
+  "id": "workspace-editor",
+  "description": "Everything in safe-default, plus writing files and creating folders inside the workspace. Still no deleting, network access or new tools.",
+  "actions": [
+    "tool:fs.stat",
+    "tool:fs.list_directory",
+    "tool:fs.read_text",
+    "tool:fs.read_json",
+    "tool:fs.write_text",
+    "tool:fs.make_directory",
+    "tool:text.search",
+    "tool:text.replace",
+    "tool:text.split",
+    "tool:text.join",
+    "tool:json.parse",
+    "tool:json.stringify",
+    "tool:json.get",
+    "tool:csv.parse",
+    "tool:csv.format",
+    "tool:hash.sha256",
+    "tool:url.build"
+  ],
+  "max_tool_risk": "medium",
+  "config": {}
+}

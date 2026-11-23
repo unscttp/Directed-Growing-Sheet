@@ -1,0 +1,6 @@
+{
+  "name": "documents.lookup",
+  "risk_level": "low",
+  "description": "Look up an example document.",
+  "config": {}
+}

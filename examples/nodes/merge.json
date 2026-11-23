@@ -1,0 +1,16 @@
+{
+  "id": "merge",
+  "type": "agent.merge",
+  "inputs": {"results": "/results"},
+  "outputs": {"summary": "/summary"},
+  "allowance": "merge_agent",
+  "pre_run": "inspect_merge",
+  "pre_run_config": {"description": "Report the available branch results"},
+  "post_run": "record_completion",
+  "post_run_config": {"label": "merge complete"},
+  "start_condition": {
+    "scope": "group",
+    "group_by": "/batch",
+    "required_edges": ["left-to-merge", "right-to-merge"]
+  }
+}

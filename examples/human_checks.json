@@ -1,0 +1,10 @@
+{
+  "id": "human_review",
+  "name": "Human review before a tool and before outgoing edges",
+  "start": ["agent"],
+  "nodes": [
+    {"id": "agent", "type": "agent", "outputs": {"answer": "/answer"}, "post_run_human_check": true},
+    {"id": "done", "type": "done"}
+  ],
+  "edges": [{"from": "agent", "to": "done"}]
+}

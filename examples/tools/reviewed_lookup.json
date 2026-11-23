@@ -1,0 +1,7 @@
+{
+  "name": "lookup",
+  "risk_level": "low",
+  "description": "Example lookup requiring a human decision before execution.",
+  "human_check": true,
+  "config": {}
+}

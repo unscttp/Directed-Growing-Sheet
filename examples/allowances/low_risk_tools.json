@@ -1,0 +1,7 @@
+{
+  "id": "low_risk_tools",
+  "description": "Named tools may run only at low risk.",
+  "actions": ["tool:documents.lookup", "tool:documents.publish"],
+  "max_tool_risk": "low",
+  "config": {}
+}

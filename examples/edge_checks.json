@@ -1,0 +1,24 @@
+{
+  "id": "checked_edges",
+  "name": "File and folder entry checks",
+  "start": ["build"],
+  "nodes": [
+    {"id": "build", "type": "build"},
+    {"id": "review", "type": "review"},
+    {"id": "archive", "type": "archive"}
+  ],
+  "edges": [
+    {
+      "from": "build",
+      "to": "review",
+      "entry_check": "files_created",
+      "entry_check_config": {"files": ["report.txt"]}
+    },
+    {
+      "from": "build",
+      "to": "archive",
+      "entry_check": "folder_ready",
+      "entry_check_config": {"pattern": "*.txt", "min_files": 1}
+    }
+  ]
+}

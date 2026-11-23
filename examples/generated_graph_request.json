@@ -1,0 +1,17 @@
+{
+  "nodes": [
+    {
+      "id": "research",
+      "type": "agent",
+      "allow_create_graph": false,
+      "config": {
+        "instruction": "Complete the requested research using allowed tools."
+      }
+    }
+  ],
+  "edges": [],
+  "start": [
+    "research"
+  ],
+  "explanation": "Use a dedicated research node to complete the current task."
+}

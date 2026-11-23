@@ -1,0 +1,23 @@
+{
+  "id": "safe-default",
+  "description": "Safe default for agents: read files inside the workspace and work with text, JSON and CSV. Nothing is written, deleted or sent over the network, and no tools can be defined.",
+  "actions": [
+    "tool:fs.stat",
+    "tool:fs.list_directory",
+    "tool:fs.read_text",
+    "tool:fs.read_json",
+    "tool:text.search",
+    "tool:text.replace",
+    "tool:text.split",
+    "tool:text.join",
+    "tool:json.parse",
+    "tool:json.stringify",
+    "tool:json.get",
+    "tool:csv.parse",
+    "tool:csv.format",
+    "tool:hash.sha256",
+    "tool:url.build"
+  ],
+  "max_tool_risk": "low",
+  "config": {}
+}

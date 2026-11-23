@@ -1,0 +1,17 @@
+{
+  "$schema": "../schemas/workflow.schema.json",
+  "id": "runtime_controls",
+  "name": "Memory, routing and bounded loops",
+  "start": ["inspect"],
+  "nodes": [
+    {"id": "inspect", "type": "agent", "routing": {"mode": "llm"},
+     "memory_checkpoints": ["review_inputs"], "timeout_seconds": 120, "timeout_human_check": true},
+    {"id": "revise", "type": "worker", "timeout_seconds": 60},
+    {"id": "publish", "type": "worker", "timeout_seconds": 60}
+  ],
+  "edges": [
+    {"id": "revise", "from": "inspect", "to": "revise", "max_traversals": 2},
+    {"id": "publish", "from": "inspect", "to": "publish", "max_traversals": 1},
+    {"id": "retry", "from": "revise", "to": "inspect", "max_traversals": 2}
+  ]
+}

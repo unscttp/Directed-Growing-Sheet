@@ -1,0 +1,5 @@
+{
+  "delete_requires_human": true,
+  "block_system_edits": true,
+  "additional_protected_paths": []
+}

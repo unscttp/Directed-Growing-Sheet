@@ -1,0 +1,13 @@
+{
+  "id": "private_reader",
+  "description": "File inspection and reading only. fs.write_text is listed but filtered out by the low risk ceiling.",
+  "actions": [
+    "tool:fs.stat",
+    "tool:fs.list_directory",
+    "tool:fs.read_text",
+    "tool:fs.read_json",
+    "tool:fs.write_text"
+  ],
+  "max_tool_risk": "low",
+  "config": {}
+}

@@ -1,0 +1,6 @@
+{
+  "id": "read_only",
+  "description": "Allows document lookup only.",
+  "actions": ["documents.lookup"],
+  "config": {}
+}

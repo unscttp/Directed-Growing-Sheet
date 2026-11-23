@@ -1,0 +1,17 @@
+{
+  "id": "node_hooks",
+  "name": "Optional node preparation and automatic completion",
+  "start": ["agent"],
+  "nodes": [
+    {
+      "id": "agent",
+      "type": "agent.summarize",
+      "outputs": {"summary": "/summary"},
+      "pre_run": "inspect_folder",
+      "pre_run_config": {"pattern": "*.txt"},
+      "post_run": "write_summary",
+      "post_run_config": {"filename": "summary.txt"}
+    }
+  ],
+  "edges": []
+}

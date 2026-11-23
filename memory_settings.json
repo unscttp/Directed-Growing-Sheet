@@ -1,0 +1,18 @@
+{
+  "react_rounds": 5,
+  "token_limit": 8192,
+  "prompt_max_events": 100,
+  "prompt_max_value_chars": 1000,
+  "prompt_budget_chars": 30000,
+  "prompt_knowledge_chars": 6000,
+  "knowledge_human_review": true,
+  "knowledge_consolidate_on_finish": true,
+  "knowledge_max_proposals_per_task": 5,
+  "graph_max_depth": 3,
+  "graph_creation_human_check": true,
+  "graph_save_human_check": true,
+  "graph_max_steps": 100,
+  "model_retry_attempts": 0,
+  "model_retry_delay_seconds": 2,
+  "model_retry_max_delay_seconds": 30
+}

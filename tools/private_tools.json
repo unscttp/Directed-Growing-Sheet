@@ -1,0 +1,464 @@
+{
+  "format_version": "1.0",
+  "tools": [
+    {
+      "name": "fs.stat",
+      "description": "Check whether a workspace path exists and return its type (file or directory) and file size in bytes. Does not read file contents.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Workspace-relative path"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fs.list_directory",
+      "description": "List the direct children of a workspace directory (not recursive): names, types, and whether the listing was cut off by the entry limit.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Workspace-relative directory path; use . for the workspace itself"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fs.read_text",
+      "description": "Read a UTF-8 text file in the workspace. Fails, without returning partial content, if the file exceeds the host's read limit.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Workspace-relative path of the text file"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fs.read_json",
+      "description": "Read and parse a UTF-8 JSON file in the workspace. Fails on invalid JSON or if the file exceeds the read limit.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Workspace-relative path of the JSON file"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fs.write_text",
+      "description": "Write a UTF-8 text file in the workspace. The parent directory must exist. Only creates new files unless overwrite is true.",
+      "risk_level": "medium",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Workspace-relative path of the file to write"
+          },
+          "content": {
+            "type": "string",
+            "description": "Complete text to write"
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "Allow replacing an existing file (default false)",
+            "default": false
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fs.make_directory",
+      "description": "Create a directory in the workspace; succeeds if it already exists. With parents=true, missing parent directories are created too.",
+      "risk_level": "medium",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Workspace-relative path of the directory"
+          },
+          "parents": {
+            "type": "boolean",
+            "description": "Also create missing parent directories (default false)",
+            "default": false
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "fs.delete_file",
+      "description": "Delete one existing file in the workspace. Requires human confirmation by default. Does not delete directories.",
+      "risk_level": "high",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Workspace-relative path of the file"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "text.search",
+      "description": "Find literal, non-overlapping matches and return character offsets.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to search"
+          },
+          "query": {
+            "type": "string",
+            "description": "Literal string to find (nonempty)"
+          }
+        },
+        "required": [
+          "text",
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "text.replace",
+      "description": "Replace all occurrences of a nonempty literal string.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to change"
+          },
+          "old": {
+            "type": "string",
+            "description": "Literal string to replace (nonempty)"
+          },
+          "new": {
+            "type": "string",
+            "description": "Replacement string"
+          }
+        },
+        "required": [
+          "text",
+          "old",
+          "new"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "text.split",
+      "description": "Split text using a literal separator, subject to the item limit.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to split"
+          },
+          "separator": {
+            "type": "string",
+            "description": "Literal separator (nonempty)"
+          }
+        },
+        "required": [
+          "text",
+          "separator"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "text.join",
+      "description": "Join a list of strings using a separator.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "Strings to join"
+          },
+          "separator": {
+            "type": "string",
+            "description": "Separator placed between items"
+          }
+        },
+        "required": [
+          "items",
+          "separator"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "json.parse",
+      "description": "Parse strict JSON text and return data.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Strict JSON text"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "json.stringify",
+      "description": "Serialize a JSON object as UTF-8 text.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "JSON object to serialize"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "json.get",
+      "description": "Read a value from an object using a JSON Pointer.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "JSON object to read from"
+          },
+          "pointer": {
+            "type": "string",
+            "description": "JSON Pointer such as /items/0/name"
+          }
+        },
+        "required": [
+          "data",
+          "pointer"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "csv.parse",
+      "description": "Parse CSV text into rows of strings.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "CSV text"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "csv.format",
+      "description": "Format rows of strings as CSV.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "description": "Rows, each a list of strings"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "hash.sha256",
+      "description": "Calculate the SHA-256 digest of UTF-8 text.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to hash (UTF-8)"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "url.build",
+      "description": "Append percent-encoded query parameters to a URL.",
+      "risk_level": "low",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Base HTTP(S) URL"
+          },
+          "query": {
+            "type": "object",
+            "description": "Query parameters (string, integer or Boolean values)"
+          }
+        },
+        "required": [
+          "url",
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "http.request",
+      "description": "Send an HTTPS request to a host-approved origin. Non-GET/HEAD requests require human review. Redirects are returned without following them. The body is decoded with the declared charset; format \"text\" returns an HTML page as its title and visible text. Long bodies are cut and marked truncated.",
+      "risk_level": "high",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "HTTPS URL on a host-approved origin"
+          },
+          "method": {
+            "type": "string",
+            "description": "GET, HEAD, POST, PUT, PATCH or DELETE"
+          },
+          "headers": {
+            "type": "object",
+            "description": "Extra request headers; credentials are added by the host"
+          },
+          "body": {
+            "type": "string",
+            "description": "Request body text (not allowed for GET and HEAD)"
+          },
+          "query": {
+            "type": "object",
+            "description": "Query parameters encoded by the runtime."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "raw",
+              "text"
+            ],
+            "description": "raw (default) returns the body as sent; text returns an HTML page as readable text"
+          }
+        },
+        "required": [
+          "url",
+          "method"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "tools.define",
+      "description": "Create or edit a declarative tool using a validated definition. Required fields: name (decl.name), description, parameters (name to type), steps (id, tool, arguments). References are {$input: parameter} or {$step: previous_id, path: JSON Pointer}. HTTP method and URL must be literal. Set overwrite=true to edit.",
+      "risk_level": "high",
+      "human_check": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "definition": {
+            "type": "object",
+            "description": "Declarative tool definition"
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "Replace an existing definition with the same name (default false)"
+          }
+        },
+        "required": [
+          "definition"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ]
+}

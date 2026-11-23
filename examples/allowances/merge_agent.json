@@ -1,0 +1,7 @@
+{
+  "id": "merge_agent",
+  "description": "Synthesize the supplied branch results without tool calls.",
+  "actions": [],
+  "max_tool_risk": "low",
+  "config": {}
+}

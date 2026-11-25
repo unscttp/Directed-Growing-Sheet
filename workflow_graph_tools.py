@@ -300,19 +300,42 @@ class GraphTools:
 
     def _approve(self, context, record, settings) -> None:
         if settings["graph_creation_human_check"]:
-            require_human_check(
-                context,
-                "graph.create:" + record["id"],
-                {
-                    "kind": "graph_creation",
-                    "graph": record["graph"],
-                    "start": record["start"],
-                    "explanation": record["explanation"],
-                    "usage_scenario": record.get("usage_scenario"),
-                    "skill": record["skill"],
-                    "skill_graph": record.get("skill_graph"),
-                },
-            )
+            key = "graph.create:" + record["id"]
+            try:
+                require_human_check(
+                    context,
+                    key,
+                    {
+                        "kind": "graph_creation",
+                        # Declining a graph does not fail the node: the call fails
+                        # with the reviewer's comment and the model carries on.
+                        "on_reject": "continue",
+                        "graph": record["graph"],
+                        "start": record["start"],
+                        "explanation": record["explanation"],
+                        "usage_scenario": record.get("usage_scenario"),
+                        "skill": record["skill"],
+                        "skill_graph": record.get("skill_graph"),
+                    },
+                )
+            except PermissionError:
+                comment = next(
+                    (
+                        request.get("comment") or ""
+                        for request in reversed(context.execution.human_checks)
+                        if request["key"] == key and request["status"] == "rejected"
+                    ),
+                    "",
+                )
+                record["rejected"] = True
+                context.record_activity(
+                    "graph.rejected", {"graph_id": record["id"], "comment": comment}
+                )
+                raise PermissionError(
+                    "The reviewer rejected this graph"
+                    + (f": {comment}" if comment else ".")
+                    + " Do not propose it again; continue without it or propose a different one."
+                ) from None
         record["approved"] = True
         event = context.record_activity(
             "graph.created",

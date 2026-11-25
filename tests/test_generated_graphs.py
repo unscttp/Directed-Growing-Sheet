@@ -1,3 +1,4 @@
+import copy
 import json
 import tempfile
 import unittest
@@ -552,3 +553,25 @@ The input is the current task data.""",
         self.assertIn("usage_scenario", result.error)
         self.assertEqual(pending_human_checks(self.task), [])
         self.assertFalse((package / "graphs").exists())
+
+    def test_a_rejected_graph_goes_back_to_the_model(self):
+        self.workflow.nodes[0].react = {}  # observe errors (the default)
+        seen = []
+
+        def parent(ctx, history):
+            seen.append(copy.deepcopy(history))
+            return NodeResult() if history else ReActAction(self.action, self.args)
+
+        self.engine.register_react("parent", parent)
+        self.assertEqual(self.run_parent().status, "waiting")
+        (request,) = pending_human_checks(self.task)
+        self.assertEqual(request["details"]["on_reject"], "continue")
+        resolve_human_check(self.task, request["id"], False, reviewer="r", comment="Too broad")
+        self.assertEqual(self.run_parent().status, "completed")
+        self.assertEqual(self.calls, [])  # the graph never ran
+        error = seen[-1][-1]["observation"]["error"]
+        self.assertEqual(error["type"], "PermissionError")
+        self.assertIn("rejected this graph: Too broad", error["message"])
+        (record,) = self.task.executions[0].memory_state["graphs"].values()
+        self.assertTrue(record["rejected"])
+        self.assertIn("graph.rejected", [e["type"] for e in self.task.events])

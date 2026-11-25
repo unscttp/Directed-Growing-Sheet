@@ -760,6 +760,9 @@ skill 包遵循 [Agent Skills 规范](https://agentskills.io/specification)：�
 - 嵌套深度、审批和步数预算由设置文件决定。
 - 子任务中产生的审批（工具、超时）会转交给父节点的审核人。
 
+审核时拒绝一个子图不会让创建它的节点失败：`graph.create` 调用会带着审核人的意见失败，模型可以不用这个图继续工作，
+或者提出另一个图（该审核标记为 `"on_reject": "continue"`；日志记录 `graph.rejected`）。再次提出同一个图会以同样方式被拒绝。
+
 ### 保存在 skill 中的图
 
 skill 可以保留运行时用过的图，下次运行时就可以从一个已经成功过的图开始：
@@ -873,6 +876,7 @@ skill 可以保留运行时用过的图，下次运行时就可以从一个已�
 - 新增：`engine.add_run_observer` 报告每个节点 execution（包括生成图子任务中的），用于显示进度。
 - 模型调用自动重试（`model_retry_*` 设置，默认关闭；`TransientModelError`），以及按引擎覆盖设置的 `engine.setting_overrides`。
 - `react.on_step_limit: "answer"` 会在 `max_steps` 用完时给节点最后一次不带工具的回合，而不是直接让它失败。
+- 审核时拒绝模型生成的子图不再让创建它的节点失败；模型会收到审核人的意见并继续工作。
 - 新增：`react.result_check` 与 `engine.register_result_check` 让宿主在 ReAct 节点的结果生效前核对它的工作；
   被拒绝的结果会连同原因返回给模型。
 - skill 中保存的图会由 `skill.<name>.invoke` 列出，并通过新的 `skill.<name>.run_graph` 工具运行；

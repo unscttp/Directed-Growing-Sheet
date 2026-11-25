@@ -919,6 +919,12 @@ Limits:
 - Approvals requested inside the child (tools, timeouts) are forwarded to the
   parent's reviewer.
 
+Rejecting a graph in review does not fail the creating node: the
+`graph.create` call fails with the reviewer's comment, so the model can carry
+on without the graph or propose another (the review is marked
+`"on_reject": "continue"`; the journal records `graph.rejected`). Proposing the
+same graph again is refused the same way.
+
 ### Graphs saved in skills
 
 A skill can keep the graphs it was run with, so the next run can start from a
@@ -1071,6 +1077,8 @@ again on every use. Omitted keys take the defaults; unknown keys are errors.
   `TransientModelError`), and per-engine `engine.setting_overrides`.
 - `react.on_step_limit: "answer"` gives a node one last, tool-less round when
   `max_steps` runs out, instead of failing it.
+- Rejecting a generated graph in review no longer fails the creating node; the
+  model gets the reviewer's comment and carries on.
 - New: `react.result_check` and `engine.register_result_check` let the host
   verify a ReAct node's work before its result is applied; rejected results go
   back to the model with the reason.

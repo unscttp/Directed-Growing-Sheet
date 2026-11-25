@@ -271,6 +271,22 @@ engine.register_react("agent", reason, observe=None)
 设置 `"react": {"on_step_limit": "answer"}` 后，会改为再询问模型一次：不提供任何工具，并在提示中标明 `react_final_round: true`，
 让模型根据已经得到的信息给出结果；只有它仍然要求执行动作时节点才会失败。日志中会记录 `react.final_round`。
 
+节点给出的总结并不能证明它确实完成了工作。`react.result_check` 指定一个由宿主提供的检查，在结果生效之前核对实际状态：
+
+```python
+def all_screened(context, result):
+    left = library.count(status="candidate")
+    return None if left == 0 else f"{left} candidates are still undecided; decide them all."
+
+engine.register_result_check("all_screened", all_screened)
+# 节点："react": {"max_steps": 30, "result_check": "all_screened"}
+```
+
+检查返回 None 表示接受结果，否则返回说明。被拒绝的结果不会生效：说明会作为观察结果（`ResultRejected`）返回给模型，
+循环继续，每次拒绝占用一步。`on_step_limit: "answer"` 的最后一个回合同样会被检查；步数用完仍没有被接受的结果时，
+节点会带着这条说明失败，后续节点就不会在未完成的工作上开始。日志中会记录 `react.result_rejected`。
+生成图只能使用以 `generated_graphs=True` 注册的检查。
+
 ### 接入模型
 
 ```python
@@ -857,6 +873,8 @@ skill 可以保留运行时用过的图，下次运行时就可以从一个已�
 - 新增：`engine.add_run_observer` 报告每个节点 execution（包括生成图子任务中的），用于显示进度。
 - 模型调用自动重试（`model_retry_*` 设置，默认关闭；`TransientModelError`），以及按引擎覆盖设置的 `engine.setting_overrides`。
 - `react.on_step_limit: "answer"` 会在 `max_steps` 用完时给节点最后一次不带工具的回合，而不是直接让它失败。
+- 新增：`react.result_check` 与 `engine.register_result_check` 让宿主在 ReAct 节点的结果生效前核对它的工作；
+  被拒绝的结果会连同原因返回给模型。
 - skill 中保存的图会由 `skill.<name>.invoke` 列出，并通过新的 `skill.<name>.run_graph` 工具运行；
   `SkillGraphInterface` 已经实现，并且可以替换。每个保存的图都会在 `graphs/<id>.meta.json` 中记录运行环境和运行历史，
   列出时会说明环境是否发生了变化（宿主通过 `engine.host_environment` 声明模型等事实）。现在保存发生在图运行完成之后，拒绝保存也不再让节点失败（`"on_reject": "continue"`）。

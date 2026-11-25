@@ -60,7 +60,14 @@ RESERVED_TOOL_NAMES = ("graph.create",)
 
 # Kinds of host code a model-generated graph may reference only when the host
 # registered it with ``generated_graphs=True``.
-GENERATED_GRAPH_KINDS = ("handler", "pre_run", "post_run", "entry_check", "start_check")
+GENERATED_GRAPH_KINDS = (
+    "handler",
+    "pre_run",
+    "post_run",
+    "entry_check",
+    "start_check",
+    "result_check",
+)
 
 AllowanceCheck = Callable[[NodeContext, AllowanceSet, str, JsonDict], bool]
 
@@ -108,6 +115,8 @@ class WorkflowEngine:
         self.pre_run_hooks: dict[str, PreRunHook] = {}
         self.post_run_hooks: dict[str, PostRunHook] = {}
         self.memory_writers: dict[str, Callable] = {}
+        # Checks of a ReAct node's final result, named by node.react["result_check"].
+        self.result_checks: dict[str, Callable[[NodeContext, NodeResult], str | None]] = {}
         self.branch_selectors: dict[str, Callable] = {}
         self.generated_graph_names: dict[str, set[str]] = {
             kind: set() for kind in GENERATED_GRAPH_KINDS
@@ -230,6 +239,28 @@ class WorkflowEngine:
         _require_callable(hook, "Post-run hook")
         self.post_run_hooks[name] = hook
         self._mark_generated("post_run", name, generated_graphs)
+
+    def register_result_check(
+        self,
+        name: str,
+        check: Callable[[NodeContext, NodeResult], str | None],
+        *,
+        generated_graphs: bool = False,
+    ) -> None:
+        """Register a check of ReAct results, referenced by ``node.react.result_check``.
+
+        ``check(context, result)`` runs when the model gives its final result and
+        returns None to accept it, or an explanation to reject it: the result is
+        then not applied, the explanation goes back to the model as an
+        observation and the loop goes on (each rejection uses a step). If the step
+        limit is reached without an accepted result, the node fails with the
+        explanation. Use it to verify that a node did its work (files written,
+        records complete) instead of trusting its summary.
+        """
+        _require_name(name, "Result check")
+        _require_callable(check, "Result check")
+        self.result_checks[name] = check
+        self._mark_generated("result_check", name, generated_graphs)
 
     def add_run_observer(self, observer: Callable[[Task, TaskExecution], None]) -> None:
         """Call ``observer(task, execution)`` before every node execution runs.

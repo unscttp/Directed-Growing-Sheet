@@ -41,6 +41,36 @@ def error_observation(exc: BaseException) -> JsonDict:
     return {"error": {"type": type(exc).__name__, "message": str(exc)}}
 
 
+class ResultRejected(ValueError):
+    """A result check refused the node's result; the message says why."""
+
+
+def check_result(context: NodeContext, result: NodeResult) -> str | None:
+    """Run the node's ``react.result_check`` on a completed result.
+
+    Returns None when the result is accepted (or the node has no check), else
+    the check's explanation, which the model sees before trying again.
+    """
+    name = context.node.react.get("result_check")
+    if name is None or result.status != "completed":
+        return None
+    checks = getattr(context.runtime, "result_checks", {})
+    if name not in checks:
+        raise ValueError(f"Unknown result check {name!r}.")
+    problem = checks[name](context, result)
+    if problem is None:
+        return None
+    if not isinstance(problem, str) or not problem.strip():
+        raise TypeError("A result check must return None or a nonempty explanation.")
+    record_event(
+        context.task,
+        "react.result_rejected",
+        {"check": name, "problem": problem},
+        context.execution,
+    )
+    return problem
+
+
 def undeclared_outputs(node, result: NodeResult) -> list[str]:
     if result.status != "completed" or not isinstance(result.values, dict):
         return []
@@ -98,11 +128,17 @@ class ReActHandler:
             decision = self._next_decision(context, history)
             if isinstance(decision, NodeResult):
                 rejected = undeclared_outputs(context.node, decision)
-                if not rejected or on_error == "fail":
-                    return decision
-                error = ValueError(
-                    f"Undeclared outputs {rejected}; declared: {sorted(context.node.outputs)}"
-                )
+                if rejected:
+                    if on_error == "fail":
+                        return decision
+                    error = ValueError(
+                        f"Undeclared outputs {rejected}; declared: {sorted(context.node.outputs)}"
+                    )
+                else:
+                    problem = check_result(context, decision)
+                    if problem is None:
+                        return decision
+                    error = ResultRejected(problem)
                 history.append(
                     {"rejected_result": asdict(decision), "observation": error_observation(error)}
                 )
@@ -126,7 +162,13 @@ class ReActHandler:
         finally:
             context.react_final_round = False
         if isinstance(decision, NodeResult) and not undeclared_outputs(context.node, decision):
-            return decision
+            problem = check_result(context, decision)
+            if problem is None:
+                return decision
+            return NodeResult(
+                status="failed",
+                error=f"ReAct max_steps exceeded and the result was not accepted: {problem}",
+            )
         return NodeResult(
             status="failed",
             error="ReAct max_steps exceeded; the final round returned no valid result.",

@@ -245,6 +245,15 @@ class WorkflowDefinition:
                 type(node.react["max_steps"]) is not int or node.react["max_steps"] < 1
             ):
                 errors.append(f"Node {node.id!r} ReAct max_steps must be a positive integer.")
+            if (
+                isinstance(node.react, dict)
+                and "result_check" in node.react
+                and (
+                    not isinstance(node.react["result_check"], str)
+                    or not node.react["result_check"]
+                )
+            ):
+                errors.append(f"Node {node.id!r} react.result_check must be a nonempty string.")
             if node.join not in {"any", "all"}:
                 errors.append(f"Node {node.id!r} has invalid join mode {node.join!r}.")
 

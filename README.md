@@ -323,6 +323,27 @@ more instead, with no tools and `react_final_round: true` in the prompt, so it
 can return a result from what it already found; the node fails only if it still
 asks for an action. The journal records `react.final_round`.
 
+A node's summary is not proof that it did its work. `react.result_check` names a
+host check that verifies the real state before the result counts:
+
+```python
+def all_screened(context, result):
+    left = library.count(status="candidate")
+    return None if left == 0 else f"{left} candidates are still undecided; decide them all."
+
+engine.register_result_check("all_screened", all_screened)
+# node: "react": {"max_steps": 30, "result_check": "all_screened"}
+```
+
+The check returns None to accept the result, or an explanation. A rejected
+result is not applied: the explanation goes back to the model as an
+observation (`ResultRejected`) and the loop continues, each rejection using a
+step. The final round of `on_step_limit: "answer"` is checked too; a node that
+runs out of steps without an accepted result fails with the explanation, so
+the next nodes never start on unfinished work. The journal records
+`react.result_rejected`. Generated graphs may name a check only if it was
+registered with `generated_graphs=True`.
+
 ### Connecting a model
 
 ```python
@@ -1050,6 +1071,9 @@ again on every use. Omitted keys take the defaults; unknown keys are errors.
   `TransientModelError`), and per-engine `engine.setting_overrides`.
 - `react.on_step_limit: "answer"` gives a node one last, tool-less round when
   `max_steps` runs out, instead of failing it.
+- New: `react.result_check` and `engine.register_result_check` let the host
+  verify a ReAct node's work before its result is applied; rejected results go
+  back to the model with the reason.
 - Graphs saved in skills are listed by `skill.<name>.invoke` and run with the
   new `skill.<name>.run_graph` tool; `SkillGraphInterface` is implemented and
   replaceable. Each saved graph keeps its environment and run history in

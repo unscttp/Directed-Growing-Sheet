@@ -67,6 +67,8 @@ def _host_references(graph: DirectedGraph) -> list[tuple[str, str]]:
             references.append(("pre_run", node.pre_run))
         if node.post_run is not None:
             references.append(("post_run", node.post_run))
+        if node.react.get("result_check") is not None:
+            references.append(("result_check", node.react["result_check"]))
         check = (node.start_condition or {}).get("check")
         if check is not None:
             references.append(("start_check", check))

@@ -8,7 +8,16 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, is_dataclass
 from typing import TYPE_CHECKING
 
-from workflow_logging import MEMORY_RULE, context_memory, newest_within, record_event, snapshot
+from workflow_history import INDEX_NOTE, archive, step_line
+from workflow_logging import (
+    MEMORY_RULE,
+    context_memory,
+    newest_within,
+    prompt_size,
+    record_event,
+    shorten,
+    snapshot,
+)
 from workflow_model_retry import call_model
 from workflow_tools import ToolDefinition
 from workflow_types import JsonDict
@@ -109,16 +118,37 @@ def build_node_messages(
     # Adapter state is opaque: it is neither shortened nor counted against the budget.
     states = [entry.get("model_state") for entry in history]
     visible = [{k: v for k, v in entry.items() if k != "model_state"} for entry in history]
-    kept, omitted = newest_within(
-        visible,
-        max_items=len(visible),
-        budget_chars=settings["prompt_budget_chars"],
+    # The newest steps and every failed step in full, the rest as an index the
+    # model can read back with history.read (see workflow_history).
+    full_steps = context.node.react.get("full_steps", settings["react_full_steps"])
+    fold = context.node.react.get("index_fold", settings["react_index_fold"])
+    runtime_tools = getattr(getattr(context, "runtime", None), "tools", None)
+    summarize = getattr(runtime_tools, "summarize", None)
+    summarize = summarize if callable(summarize) else None
+    lines, positions = archive(visible, full_steps, fold, summarize)
+    failed = [i for i in positions if i < len(visible) - full_steps]
+    recent = [i for i in positions if i >= len(visible) - full_steps]
+    kept_failed = [shorten(visible[i], settings["prompt_max_value_chars"]) for i in failed]
+    used = sum(prompt_size(json.dumps(entry, ensure_ascii=False)) for entry in kept_failed)
+    kept_recent, dropped = newest_within(
+        [visible[i] for i in recent],
+        max_items=len(recent),
+        budget_chars=max(settings["prompt_budget_chars"] - used, 1),
         max_value_chars=settings["prompt_max_value_chars"],
     )
-    for entry, state in zip(kept, states[omitted:], strict=True):
-        if state is not None:
-            entry["model_state"] = copy.deepcopy(state)
-    payload["history"], payload["history_omitted_older_steps"] = kept, omitted
+    # Recent steps that do not fit the budget are indexed like archived ones.
+    lines.extend(step_line(i + 1, visible[i], summarize) for i in recent[:dropped])
+    recent = recent[dropped:]
+    kept = []
+    for position, entry in zip(failed + recent, kept_failed + kept_recent, strict=True):
+        entry["step"] = position + 1
+        if states[position] is not None:
+            entry["model_state"] = copy.deepcopy(states[position])
+        kept.append(entry)
+    payload["history"] = kept
+    payload["history_omitted_older_steps"] = len(visible) - len(kept)
+    if lines:
+        payload["history_index"] = {"note": INDEX_NOTE, "steps": lines}
     if getattr(context, "react_final_round", False):
         payload["available_tools"] = []
         payload["react_final_round"] = True

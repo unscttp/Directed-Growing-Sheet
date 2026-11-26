@@ -23,7 +23,15 @@ DEFAULTS: JsonDict = {
     # Longer strings inside prompt memory and history are cut to this many characters.
     "prompt_max_value_chars": 1000,
     # Character budget for each prompt section: events, notes and ReAct history.
+    # Chinese, Japanese and Korean characters count four times (about a token each).
     "prompt_budget_chars": 30000,
+    # ReAct prompts carry this many of a node's newest steps in full; older steps
+    # become an index the model can read back with history.read (failed steps
+    # always stay in full). Per node: react.full_steps.
+    "react_full_steps": 5,
+    # Fold each complete block of this many archived steps into one index line
+    # (0: one line per step). Per node: react.index_fold.
+    "react_index_fold": 10,
     # Character budget for the knowledge page index shown to a node.
     "prompt_knowledge_chars": 6000,
     # Every knowledge proposal waits for a person. When false, proposals from tasks
@@ -45,7 +53,7 @@ DEFAULTS: JsonDict = {
     "model_retry_max_delay_seconds": 30,
 }
 
-_MINIMUM = {"graph_max_depth": 0, "model_retry_attempts": 0}
+_MINIMUM = {"graph_max_depth": 0, "model_retry_attempts": 0, "react_index_fold": 0}
 
 
 def load_settings(

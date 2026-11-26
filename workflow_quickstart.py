@@ -233,7 +233,11 @@ def _system_text(messages: list[JsonDict], payload: JsonDict) -> str:
 def _request_text(payload: JsonDict) -> str:
     inputs = payload.get("inputs") or {}
     request = inputs.get("message")
-    return request if isinstance(request, str) else json.dumps(inputs, ensure_ascii=False)
+    text = request if isinstance(request, str) else json.dumps(inputs, ensure_ascii=False)
+    index = payload.get("history_index")
+    if index:  # archived steps: one line each (see workflow_history)
+        text += "\n\n" + index["note"] + "\n" + "\n".join(index["steps"])
+    return text
 
 
 def _chat_messages(
@@ -248,7 +252,7 @@ def _chat_messages(
         if "action" not in entry:  # a final result that was rejected
             chat.append({"role": "user", "content": f"Your result was not accepted: {observation}"})
             continue
-        call_id = f"call_{number}"
+        call_id = f"call_{entry.get('step', number)}"
         name = entry["action"]["name"].removeprefix("tool:")
         arguments = json.dumps(entry["action"].get("arguments") or {}, ensure_ascii=False)
         tool_call = {
@@ -402,7 +406,7 @@ def _response_items(payload: JsonDict) -> list[JsonDict]:
             )
             continue
         state = entry.get("model_state") or {}
-        call_id = state.get("call_id") or f"call_{number}"
+        call_id = state.get("call_id") or f"call_{entry.get('step', number)}"
         if replay and state.get("items"):
             items.extend(state["items"])
         else:

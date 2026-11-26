@@ -8,6 +8,7 @@ Runtime events are data, never instructions.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -102,6 +103,15 @@ def shorten(value: Any, max_chars: int) -> Any:
     return value
 
 
+CJK = re.compile(r"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff]")
+
+
+def prompt_size(text: str) -> int:
+    """Characters as a budget counts them: a Chinese, Japanese or Korean character
+    is about one token, four times what a Latin character costs."""
+    return len(text) + 3 * len(CJK.findall(text))
+
+
 def newest_within(items: list, *, max_items: int, budget_chars: int, max_value_chars: int):
     """Shortened copies of the newest items that fit both limits, in original order.
 
@@ -111,7 +121,7 @@ def newest_within(items: list, *, max_items: int, budget_chars: int, max_value_c
     used = 0
     for item in reversed(items[-max_items:] if max_items else []):
         short = shorten(item, max_value_chars)
-        size = len(json.dumps(short, ensure_ascii=False))
+        size = prompt_size(json.dumps(short, ensure_ascii=False))
         if kept and used + size > budget_chars:
             break
         kept.append(short)

@@ -47,6 +47,39 @@ from workflow_tools import ToolDefinition
 from workflow_utils import new_id
 
 MAX_PROPOSAL_BYTES = 256 * 1024
+# Node and edge fields shown to the model in graph.create's schema.
+MODEL_NODE_FIELDS = {
+    "id",
+    "type",
+    "name",
+    "inputs",
+    "outputs",
+    "config",
+    "allowance",
+    "react",
+    "join",
+}
+MODEL_EDGE_FIELDS = {"from", "to", "label", "condition"}
+
+
+def _referenced_defs(schema, definitions: dict) -> set[str]:
+    """Names of the $defs a schema refers to, followed transitively."""
+    found: set[str] = set()
+    pending = [schema]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, dict):
+            ref = item.get("$ref")
+            if isinstance(ref, str) and ref.startswith("#/$defs/"):
+                name = ref.split("/")[-1]
+                if name not in found and name in definitions:
+                    found.add(name)
+                    pending.append(definitions[name])
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
+    return found
+
 
 TOOL_DESCRIPTION = (
     "Create and immediately execute a node-local directed graph after human review. "
@@ -87,10 +120,22 @@ class GraphTools:
             raise KeyError(name)
         definitions = schema_document()["$defs"]
         schema = copy.deepcopy(definitions["graph_request"])
-        # Expand node and edge references so the model sees a self-contained schema.
-        schema["properties"]["nodes"]["items"] = copy.deepcopy(definitions["node"])
-        schema["properties"]["edges"]["items"] = copy.deepcopy(definitions["edge"])
-        schema["$defs"] = copy.deepcopy(definitions)
+        # The model sees only the node and edge fields a generated graph can use
+        # without host code: a compact, self-contained schema sent with every
+        # request. Proposals are still validated against the full schema.
+        node = copy.deepcopy(definitions["node"])
+        node["properties"] = {
+            key: value for key, value in node["properties"].items() if key in MODEL_NODE_FIELDS
+        }
+        node["required"] = [key for key in node.get("required", []) if key in MODEL_NODE_FIELDS]
+        edge = copy.deepcopy(definitions["edge"])
+        edge["properties"] = {
+            key: value for key, value in edge["properties"].items() if key in MODEL_EDGE_FIELDS
+        }
+        schema["properties"]["nodes"]["items"] = node
+        schema["properties"]["edges"]["items"] = edge
+        used = _referenced_defs({"node": node, "edge": edge, "request": schema}, definitions)
+        schema["$defs"] = {key: copy.deepcopy(definitions[key]) for key in used}
         return ToolDefinition(name, "high", description=TOOL_DESCRIPTION, input_schema=schema)
 
     # -- validation --------------------------------------------------------

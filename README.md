@@ -344,6 +344,28 @@ the next nodes never start on unfinished work. The journal records
 `react.result_rejected`. Generated graphs may name a check only if it was
 registered with `generated_graphs=True`.
 
+**Long nodes stay small.** Every step is kept in full in the execution's
+journal, but a prompt carries only the newest `react_full_steps` steps
+(default 5) and every failed step (an error, or a result a check rejected) in
+full. Older steps become a numbered index, one line each; each complete block
+of `react_index_fold` steps (default 10; 0 never folds) becomes one line:
+
+```text
+#1-#10: called library.next_candidates ×5, library.decide ×5
+#11 library.decide - decided 25: 3 included, 22 excluded
+#12 library.next_candidates failed (in full below)
+```
+
+The model reads any archived step again with the built-in `history.read` tool
+(`{"steps": "11"}`, `"3,9"` or `"1-10"`, up to 10 per call). It is offered once
+steps are archived and needs no allowance entry: it only shows the node its
+own steps. A tool can describe its calls for the index:
+`module.register(tool, handler, summary=lambda args, result: "...")`; others
+get a line from their arguments and result. Index lines never change once
+written, so the start of the prompt stays stable for provider prompt caches.
+Set `react.full_steps` and `react.index_fold` on a node to change both for that
+node.
+
 ### Connecting a model
 
 ```python
@@ -1005,7 +1027,9 @@ again on every use. Omitted keys take the defaults; unknown keys are errors.
 | `token_limit` | 8192 | Checkpoint each time this many decision tokens are used (provider counts via `MeteredDecision`, otherwise estimated). This is a checkpoint interval, not a spending cap. |
 | `prompt_max_events` | 100 | Most recent journal events shown to a model |
 | `prompt_max_value_chars` | 1000 | Longer strings in prompt memory and history are shortened |
-| `prompt_budget_chars` | 30000 | Character budget for each prompt section: events, notes, history |
+| `prompt_budget_chars` | 30000 | Character budget for each prompt section: events, notes, history (a Chinese, Japanese or Korean character counts four) |
+| `react_full_steps` | 5 | Newest ReAct steps sent in full; older ones become an index (failed steps always in full) |
+| `react_index_fold` | 10 | Fold each complete block of this many archived steps into one index line (0: never) |
 | `prompt_knowledge_chars` | 6000 | Character budget for the knowledge index in a prompt |
 | `knowledge_human_review` | true | Every knowledge proposal waits for a person; `false` auto-applies proposals from tasks without outside content |
 | `knowledge_consolidate_on_finish` | true | Ask the knowledge writer for lessons when a task completes or fails |
@@ -1079,6 +1103,13 @@ again on every use. Omitted keys take the defaults; unknown keys are errors.
   `max_steps` runs out, instead of failing it.
 - Rejecting a generated graph in review no longer fails the creating node; the
   model gets the reviewer's comment and carries on.
+- New: long ReAct nodes send only their newest steps (`react_full_steps`, 5)
+  and failed steps in full; older steps become an index (folded per
+  `react_index_fold`, 10) that the model reads back with `history.read`. Tools
+  can summarize their calls for the index (`register(..., summary=...)`). The
+  prompt budget counts CJK characters as four.
+- `graph.create` shows the model a compact schema (the node fields a generated
+  graph can use); proposals are still validated against the full schema.
 - New: `react.result_check` and `engine.register_result_check` let the host
   verify a ReAct node's work before its result is applied; rejected results go
   back to the model with the reason.

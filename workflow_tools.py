@@ -106,15 +106,27 @@ class LocalToolModule:
 
     def __init__(self) -> None:
         self._tools: dict[str, tuple[ToolDefinition, ToolHandler]] = {}
+        self._summaries: dict[str, Any] = {}
 
-    def register(self, tool: ToolDefinition, handler: ToolHandler) -> None:
+    def register(self, tool: ToolDefinition, handler: ToolHandler, *, summary=None) -> None:
+        """Add a tool. ``summary(arguments, result) -> str`` describes one call in a
+        line for the archived-step index of prompts (see ``workflow_history``)."""
         if not callable(handler):
             raise TypeError("Tool handler must be callable.")
+        if summary is not None and not callable(summary):
+            raise TypeError("Tool summary must be callable.")
         validated = ToolDefinition.from_dict(tool.to_dict())
         added = validated.name not in self._tools
         self._tools[validated.name] = (validated, handler)
+        if summary is not None:
+            self._summaries[validated.name] = summary
         if added:
             record_registration(validated)
+
+    def summarize(self, name: str, arguments: JsonDict, result: Any) -> str | None:
+        """One line about a call of a tool registered with a ``summary``, else None."""
+        summary = self._summaries.get(name)
+        return summary(arguments, result) if summary is not None else None
 
     def get_tool(self, name: str) -> ToolDefinition:
         if name not in self._tools:
@@ -127,7 +139,7 @@ class LocalToolModule:
     def set_human_check(self, name: str, required: bool = True) -> None:
         """Require human review before each engine-dispatched invocation."""
         tool = replace(self.get_tool(name), human_check=required)
-        self.register(tool, self._tools[name][1])
+        self.register(tool, self._tools[name][1], summary=self._summaries.get(name))
 
     def execute(self, context: NodeContext, tool: ToolDefinition, arguments: JsonDict) -> Any:
         """Check the arguments against the tool's ``input_schema``, then run the handler."""
@@ -193,6 +205,14 @@ class CompositeToolModule:
 
     def execute(self, context: NodeContext, tool: ToolDefinition, arguments: JsonDict) -> Any:
         return self._owner(tool.name).execute(context, tool, arguments)
+
+    def summarize(self, name: str, arguments: JsonDict, result: Any) -> str | None:
+        try:
+            owner = self._owner(name)
+        except (KeyError, ValueError):
+            return None
+        summarize = getattr(owner, "summarize", None)
+        return summarize(name, arguments, result) if callable(summarize) else None
 
     @property
     def skill_packages(self) -> dict:

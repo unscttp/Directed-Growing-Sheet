@@ -30,6 +30,7 @@ from workflow_definitions import EdgeDefinition, NodeDefinition, WorkflowDefinit
 from workflow_edge_checks import EdgeCheckContext, EntryCheck
 from workflow_executions import Task, TaskExecution
 from workflow_graph_tools import GraphTools
+from workflow_history import HISTORY_TOOL, HistoryTools
 from workflow_hooks import PostRunHook, PreRunHook, require_post_run_human_check
 from workflow_joins import TaskPool
 from workflow_knowledge import KnowledgeStore
@@ -56,7 +57,7 @@ from workflow_types import JsonDict, NodeHandler
 from workflow_utils import get_value, set_value
 
 NODE_RESULT_STATUSES = ("completed", "waiting", "failed")
-RESERVED_TOOL_NAMES = ("graph.create",)
+RESERVED_TOOL_NAMES = ("graph.create", HISTORY_TOOL)
 
 # Kinds of host code a model-generated graph may reference only when the host
 # registered it with ``generated_graphs=True``.
@@ -123,6 +124,7 @@ class WorkflowEngine:
         }
         self.mcp_servers: dict[str, MCPToolModule] = {}
         self.graph_tools = GraphTools(self)
+        self.history_tools = HistoryTools()
         self.knowledge_tools = KnowledgeTools(self)
         self.knowledge: KnowledgeStore | None = None
         self.knowledge_writer: Callable | None = None
@@ -458,6 +460,12 @@ class WorkflowEngine:
         prompt["available_tools"] = tool_prompt_descriptions(
             catalog, allowance, argument_check_required=self.allowance_check is not None
         )
+        # Offered once some of the node's steps are archived (see workflow_history).
+        full_steps = context.node.react.get("full_steps", settings["react_full_steps"])
+        if len(context.execution.local.get("react") or []) > full_steps:
+            prompt["available_tools"].extend(
+                tool_prompt_descriptions([self.history_tools.get_tool(HISTORY_TOOL)], None)
+            )
         return prompt
 
     # ------------------------------------------------------------------
@@ -547,7 +555,9 @@ class WorkflowEngine:
         """Return (definition, backend, MCP server ID) for a ``tool:`` action."""
         name = action[len("tool:") :]
         module, server = self.tools, None
-        if name in RESERVED_TOOL_NAMES:
+        if name == HISTORY_TOOL:
+            module = self.history_tools
+        elif name in RESERVED_TOOL_NAMES:
             module = self.graph_tools
         elif name.startswith(KNOWLEDGE_TOOL_PREFIX):
             module = self.knowledge_tools
@@ -605,7 +615,9 @@ class WorkflowEngine:
         tool, module, server = (
             self._resolve_tool(context, action) if is_tool else (None, None, None)
         )
-        self._check_permissions(context, action, tool, arguments)
+        if not (tool is not None and tool.name == HISTORY_TOOL):
+            # history.read only shows a node its own earlier steps: no allowance needed.
+            self._check_permissions(context, action, tool, arguments)
 
         if tool is None:
             if action not in self.actions:

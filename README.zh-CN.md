@@ -287,6 +287,22 @@ engine.register_result_check("all_screened", all_screened)
 节点会带着这条说明失败，后续节点就不会在未完成的工作上开始。日志中会记录 `react.result_rejected`。
 生成图只能使用以 `generated_graphs=True` 注册的检查。
 
+**长节点的提示词保持精简。** 每一步都会完整保存在 execution 的日志中，但提示词只完整携带最新的 `react_full_steps` 步（默认 5）
+以及所有失败的步骤（出错的调用，或被检查拒绝的结果）。更早的步骤变成编号索引，每步一行；每满 `react_index_fold` 步
+（默认 10；0 表示不折叠）的完整区块折叠为一行：
+
+```text
+#1-#10: called library.next_candidates ×5, library.decide ×5
+#11 library.decide - decided 25: 3 included, 22 excluded
+#12 library.next_candidates failed (in full below)
+```
+
+模型可以用内置的 `history.read` 工具重新读取任何已归档的步骤（`{"steps": "11"}`、`"3,9"` 或 `"1-10"`，每次最多 10 步）。
+有步骤被归档后才会提供这个工具，它不需要 allowance：它只向节点展示节点自己的步骤。工具可以为索引描述自己的调用：
+`module.register(tool, handler, summary=lambda args, result: "...")`；其他工具会根据参数和结果生成一行。
+索引行一旦写入就不再改变，因此提示词的开头在各次请求之间保持稳定，服务商的提示缓存可以继续生效。
+在节点上设置 `react.full_steps` 和 `react.index_fold` 可以单独调整该节点的这两个值。
+
 ### 接入模型
 
 ```python
@@ -822,7 +838,9 @@ skill 可以保留运行时用过的图，下次运行时就可以从一个已�
 | `token_limit` | 8192 | 每累计使用这么多决策 token 产生一个检查点（通过 `MeteredDecision` 使用模型服务的计数，否则估算）。这是检查点间隔，不是费用上限。 |
 | `prompt_max_events` | 100 | 展示给模型的最新日志事件数量上限 |
 | `prompt_max_value_chars` | 1000 | 提示词中记忆和历史里的长字符串会被截短到此长度 |
-| `prompt_budget_chars` | 30000 | 提示词各部分（事件、笔记、历史）各自的字符预算 |
+| `prompt_budget_chars` | 30000 | 提示词各部分（事件、笔记、历史）各自的字符预算（中文、日文、韩文字符按四个计） |
+| `react_full_steps` | 5 | 完整发送的最新 ReAct 步数；更早的步骤变成索引（失败的步骤始终完整保留） |
+| `react_index_fold` | 10 | 每满这么多已归档步骤，折叠为一行索引（0：不折叠） |
 | `prompt_knowledge_chars` | 6000 | 提示词中知识索引的字符预算 |
 | `knowledge_human_review` | true | 所有知识提案都需人工审核；设为 `false` 时，未使用外部内容的任务提出的提案自动生效 |
 | `knowledge_consolidate_on_finish` | true | 任务完成或失败时，向知识写入器询问值得保留的经验 |
@@ -877,6 +895,10 @@ skill 可以保留运行时用过的图，下次运行时就可以从一个已�
 - 模型调用自动重试（`model_retry_*` 设置，默认关闭；`TransientModelError`），以及按引擎覆盖设置的 `engine.setting_overrides`。
 - `react.on_step_limit: "answer"` 会在 `max_steps` 用完时给节点最后一次不带工具的回合，而不是直接让它失败。
 - 审核时拒绝模型生成的子图不再让创建它的节点失败；模型会收到审核人的意见并继续工作。
+- 新增：较长的 ReAct 节点只完整发送最新的步骤（`react_full_steps`，5）和失败的步骤；更早的步骤变成索引
+  （按 `react_index_fold` 折叠，10），模型可以用 `history.read` 读回。工具可以为索引概括自己的调用（`register(..., summary=...)`）。
+  提示词预算中，中日韩字符按四个计。
+- `graph.create` 向模型展示精简的 schema（生成图能用到的节点字段）；提议仍按完整 schema 校验。
 - 新增：`react.result_check` 与 `engine.register_result_check` 让宿主在 ReAct 节点的结果生效前核对它的工作；
   被拒绝的结果会连同原因返回给模型。
 - skill 中保存的图会由 `skill.<name>.invoke` 列出，并通过新的 `skill.<name>.run_graph` 工具运行；
